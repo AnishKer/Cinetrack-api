@@ -43,3 +43,88 @@ test("GET /api/movies/:id - should return 404 for nonexistent movie", async () =
     message: "Movie not found.",
   });
 });
+
+test("GET /api/movies - should return all movies", async () => {
+  const response = await request(app)
+    .get("/api/movies");
+
+  assert.strictEqual(response.statusCode, 200);
+  assert.ok(Array.isArray(response.body.movies));
+  assert.ok(response.body.movies.length > 0);
+});
+
+test("GET /api/movies - should search movies by title", async () => {
+  const response = await request(app)
+    .get("/api/movies?search=dark");
+
+  assert.strictEqual(response.statusCode, 200);
+  assert.ok(
+    response.body.movies.some(
+      (movie) => movie.title === "The Dark Knight",
+    ),
+  );
+});
+
+test("GET /api/movies - should filter movies by genre", async () => {
+  const response = await request(app)
+    .get("/api/movies?genre=Sci-Fi");
+
+  assert.strictEqual(response.statusCode, 200);
+
+  assert.ok(
+    response.body.movies.every(
+      (movie) => movie.genre === "Sci-Fi",
+    ),
+  );
+});
+
+test("GET /api/movies - should filter movies by year", async () => {
+  const response = await request(app)
+    .get("/api/movies?year=2014");
+
+  assert.strictEqual(response.statusCode, 200);
+
+  assert.ok(
+    response.body.movies.every(
+      (movie) => movie.release_year === 2014,
+    ),
+  );
+});
+
+test("GET /api/movies - should combine filters", async () => {
+  const response = await request(app)
+    .get("/api/movies?genre=Sci-Fi&year=2014");
+
+  assert.strictEqual(response.statusCode, 200);
+  assert.strictEqual(response.body.movies.length, 1);
+  assert.strictEqual(
+    response.body.movies[0].title,
+    "Interstellar",
+  );
+});
+
+test("GET /api/movies - should sort movies by release year descending", async () => {
+  const response = await request(app)
+    .get("/api/movies?sort=year&order=desc");
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const movies = response.body.movies;
+
+  for (let i = 1; i < movies.length; i++) {
+    assert.ok(
+      movies[i - 1].release_year >= movies[i].release_year,
+    );
+  }
+});
+
+test("GET /api/movies - should reject invalid sort field", async () => {
+  const response = await request(app)
+    .get("/api/movies?sort=rating");
+
+  assert.strictEqual(response.statusCode, 400);
+  assert.strictEqual(
+    response.body.message,
+    "Validation failed.",
+  );
+});
