@@ -209,3 +209,35 @@ test("PATCH /api/watchlist/:movieId - should reject unauthenticated request", as
 
   assert.strictEqual(response.statusCode, 401);
 });
+
+test("DELETE /api/watchlist/:movieId - should remove movie from watchlist", async () => {
+  // Make sure the movie exists in the watchlist first
+  await request(app)
+    .post(`/api/watchlist/${movieId}`)
+    .set("Authorization", `Bearer ${token}`);
+
+  const response = await request(app)
+    .delete(`/api/watchlist/${movieId}`)
+    .set("Authorization", `Bearer ${token}`);
+
+  assert.strictEqual(response.statusCode, 204);
+});
+
+test("DELETE /api/watchlist/:movieId - should return 404 if movie is not in watchlist", async () => {
+  const response = await request(app)
+    .delete(`/api/watchlist/${movieId}`)
+    .set("Authorization", `Bearer ${token}`);
+
+  assert.strictEqual(response.statusCode, 404);
+  assert.strictEqual(
+    response.body.message,
+    "Movie not found in watchlist.",
+  );
+});
+
+test("DELETE /api/watchlist/:movieId - should reject unauthenticated request", async () => {
+  const response = await request(app)
+    .delete(`/api/watchlist/${movieId}`);
+
+  assert.strictEqual(response.statusCode, 401);
+});
