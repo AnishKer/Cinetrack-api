@@ -11,7 +11,7 @@ export const getMovies = async (req, res, next) => {
       });
     }
 
-    const { search, genre, year, sort, order } = result.data;
+    const { search, genre, year, sort, order, limit, offset } = result.data;
 
     const conditions = [];
     const values = [];
@@ -41,17 +41,38 @@ export const getMovies = async (req, res, next) => {
 
     const sortField = sortFields[sort];
 
+    const limitParam = values.length + 1;
+    const offsetParam = values.length + 2;
+
+    values.push(limit, offset);
+
     const query = `
       SELECT id, title, release_year, genre, description
       FROM movies
       ${whereClause}
-      ORDER BY ${sortField} ${order};
+      ORDER BY ${sortField} ${order}
+      LIMIT $${limitParam}
+      OFFSET $${offsetParam};
     `;
 
     const movies = await pool.query(query, values);
 
+    const countResult = await pool.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM movies
+      ${whereClause};
+      `,
+      values.slice(0, -2),
+    );
+
     return res.status(200).json({
       movies: movies.rows,
+      pagination: {
+        limit,
+        offset,
+        total: Number(countResult.rows[0].total),
+      },
     });
   } catch (err) {
     next(err);

@@ -128,3 +128,112 @@ test("GET /api/movies - should reject invalid sort field", async () => {
     "Validation failed.",
   );
 });
+
+test("GET /api/movies returns first page with default pagination", async () => {
+  const response = await request(app)
+    .get("/api/movies");
+
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(response.body.movies.length, 10);
+
+  assert.strictEqual(response.body.pagination.limit, 10);
+  assert.strictEqual(response.body.pagination.offset, 0);
+  assert.strictEqual(response.body.pagination.total, 16);
+});
+
+test("GET /api/movies respects custom limit", async () => {
+  const response = await request(app)
+    .get("/api/movies?limit=5");
+
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(response.body.movies.length, 5);
+
+  assert.strictEqual(response.body.pagination.limit, 5);
+  assert.strictEqual(response.body.pagination.offset, 0);
+  assert.strictEqual(response.body.pagination.total, 16);
+});
+
+test("GET /api/movies respects offset", async () => {
+  const firstPage = await request(app)
+    .get("/api/movies?limit=5&offset=0");
+
+  const secondPage = await request(app)
+    .get("/api/movies?limit=5&offset=5");
+
+  assert.strictEqual(firstPage.status, 200);
+  assert.strictEqual(secondPage.status, 200);
+
+  assert.strictEqual(firstPage.body.movies.length, 5);
+  assert.strictEqual(secondPage.body.movies.length, 5);
+
+  assert.strictEqual(secondPage.body.pagination.limit, 5);
+  assert.strictEqual(secondPage.body.pagination.offset, 5);
+  assert.strictEqual(secondPage.body.pagination.total, 16);
+
+  assert.notStrictEqual(
+    firstPage.body.movies[0].id,
+    secondPage.body.movies[0].id,
+  );
+});
+
+test("GET /api/movies returns empty page when offset exceeds total", async () => {
+  const response = await request(app)
+    .get("/api/movies?limit=5&offset=16");
+
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(response.body.movies.length, 0);
+
+  assert.strictEqual(response.body.pagination.limit, 5);
+  assert.strictEqual(response.body.pagination.offset, 16);
+  assert.strictEqual(response.body.pagination.total, 16);
+});
+
+test("GET /api/movies applies pagination to filtered results", async () => {
+  const response = await request(app)
+    .get("/api/movies?genre=Sci-Fi&limit=2&offset=0");
+
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(response.body.movies.length, 2);
+
+  assert.strictEqual(response.body.pagination.limit, 2);
+  assert.strictEqual(response.body.pagination.offset, 0);
+
+  assert.strictEqual(response.body.pagination.total, 4);
+});
+
+test("GET /api/movies rejects invalid limit", async () => {
+  const response = await request(app)
+    .get("/api/movies?limit=0");
+
+  assert.strictEqual(response.status, 400);
+});
+
+test("GET /api/movies rejects negative offset", async () => {
+  const response = await request(app)
+    .get("/api/movies?offset=-1");
+
+  assert.strictEqual(response.status, 400);
+});
+
+test("GET /api/movies rejects limit above maximum", async () => {
+  const response = await request(app)
+    .get("/api/movies?limit=101");
+
+  assert.strictEqual(response.status, 400);
+});
+
+test("GET /api/movies supports pagination with sorting", async () => {
+  const response = await request(app)
+    .get("/api/movies?sort=year&order=desc&limit=5&offset=0");
+
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(response.body.movies.length, 5);
+
+  const years = response.body.movies.map(
+    (movie) => movie.release_year,
+  );
+
+  for (let i = 1; i < years.length; i++) {
+    assert.ok(years[i - 1] >= years[i]);
+  }
+});
