@@ -40,7 +40,6 @@ before(async () => {
   token = loginResponse.body.token;
 });
 
-
 test("POST /api/watchlist/:movieId - should add movie to watchlist", async () => {
   const response = await request(app)
     .post(`/api/watchlist/${movieId}`)
@@ -75,13 +74,80 @@ test("POST /api/watchlist/:movieId - should reject unauthenticated request", asy
 });
 
 after(async () => {
-  await pool.query(
-    `DELETE FROM users WHERE email = $1`,
-    ["watchlist@test.com"],
-  );
+  await pool.query(`DELETE FROM users WHERE email = $1`, [
+    "watchlist@test.com",
+  ]);
+
+  await pool.query(`DELETE FROM movies WHERE id = $1`, [movieId]);
+});
+
+test("GET /api/watchlist - should return user's watchlist", async () => {
+  // Add the movie through the API
+  await request(app)
+    .post(`/api/watchlist/${movieId}`)
+    .set("Authorization", `Bearer ${token}`);
+
+  const response = await request(app)
+    .get("/api/watchlist")
+    .set("Authorization", `Bearer ${token}`);
+
+  assert.strictEqual(response.statusCode, 200);
+  assert.strictEqual(response.body.watchlist.length, 1);
+
+  assert.strictEqual(response.body.watchlist[0].movie_id, movieId);
+
+  assert.strictEqual(response.body.watchlist[0].title, "Watchlist Test Movie");
+
+  assert.strictEqual(response.body.watchlist[0].status, "planned");
+});
+
+test("GET /api/watchlist - should return empty array for user with no movies", async () => {
+  const passwordHash = await bcrypt.hash("TestPassword456", 12);
 
   await pool.query(
-    `DELETE FROM movies WHERE id = $1`,
-    [movieId],
+    `
+    INSERT INTO users (username, email, password_hash)
+    VALUES ($1, $2, $3);
+    `,
+    ["empty_watchlist_user", "empty@watchlist.com", passwordHash],
   );
+
+  const loginResponse = await request(app).post("/api/auth/login").send({
+    email: "empty@watchlist.com",
+    password: "TestPassword456",
+  });
+
+  const emptyUserToken = loginResponse.body.token;
+
+  const response = await request(app)
+    .get("/api/watchlist")
+    .set("Authorization", `Bearer ${emptyUserToken}`);
+
+  assert.strictEqual(response.statusCode, 200);
+  assert.deepStrictEqual(response.body.watchlist, []);
+
+  await pool.query(`DELETE FROM users WHERE email = $1`, [
+    "empty@watchlist.com",
+  ]);
+});
+
+test("GET /api/watchlist - should reject unauthenticated request", async () => {
+  const response = await request(app).get("/api/watchlist");
+
+  assert.strictEqual(response.statusCode, 401);
+});
+
+test("GET /api/watchlist - should return user's watchlist", async () => {
+  const response = await request(app)
+    .get("/api/watchlist")
+    .set("Authorization", `Bearer ${token}`);
+
+  assert.strictEqual(response.statusCode, 200);
+  assert.strictEqual(response.body.watchlist.length, 1);
+
+  assert.strictEqual(response.body.watchlist[0].movie_id, movieId);
+
+  assert.strictEqual(response.body.watchlist[0].title, "Watchlist Test Movie");
+
+  assert.strictEqual(response.body.watchlist[0].status, "planned");
 });
