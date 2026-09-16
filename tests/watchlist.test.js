@@ -151,3 +151,61 @@ test("GET /api/watchlist - should return user's watchlist", async () => {
 
   assert.strictEqual(response.body.watchlist[0].status, "planned");
 });
+
+test("PATCH /api/watchlist/:movieId - should mark movie as watched", async () => {
+  const response = await request(app)
+    .patch(`/api/watchlist/${movieId}`)
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      status: "watched",
+    });
+
+  assert.strictEqual(response.statusCode, 200);
+  assert.strictEqual(response.body.watchlistItem.status, "watched");
+  assert.ok(response.body.watchlistItem.watched_at);
+});
+
+test("PATCH /api/watchlist/:movieId - should mark movie as planned", async () => {
+  const response = await request(app)
+    .patch(`/api/watchlist/${movieId}`)
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      status: "planned",
+    });
+
+  assert.strictEqual(response.statusCode, 200);
+  assert.strictEqual(response.body.watchlistItem.status, "planned");
+  assert.strictEqual(response.body.watchlistItem.watched_at, null);
+});
+
+test("PATCH /api/watchlist/:movieId - should reject invalid status", async () => {
+  const response = await request(app)
+    .patch(`/api/watchlist/${movieId}`)
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      status: "completed",
+    });
+
+  assert.strictEqual(response.statusCode, 400);
+  assert.strictEqual(response.body.message, "Validation failed.");
+});
+
+test("PATCH /api/watchlist/:movieId - should reject movie not in watchlist", async () => {
+  const response = await request(app)
+    .patch("/api/watchlist/999999")
+    .set("Authorization", `Bearer ${token}`)
+    .send({
+      status: "watched",
+    });
+
+  assert.strictEqual(response.statusCode, 404);
+  assert.strictEqual(response.body.message, "Movie not found in watchlist.");
+});
+
+test("PATCH /api/watchlist/:movieId - should reject unauthenticated request", async () => {
+  const response = await request(app).patch(`/api/watchlist/${movieId}`).send({
+    status: "watched",
+  });
+
+  assert.strictEqual(response.statusCode, 401);
+});
