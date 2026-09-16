@@ -98,3 +98,27 @@ export const updateMovie = async (req, res, next) => {
     next(err);
   }
 };
+
+export const removeMovie = async (req, res, next) => {
+  try {
+    const { movieId } = req.params;
+    const userId = req.user.userId;
+    const result = await pool.query(
+      `
+            delete from watchlist_items where user_id = $1 and movie_id = $2 
+            returning id;
+            `,
+      [userId, movieId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "Movie not found in watchlist.",
+      });
+    }
+
+    return res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
