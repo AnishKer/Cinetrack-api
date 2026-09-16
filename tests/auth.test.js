@@ -11,7 +11,6 @@ before(async () => {
 
 after(async () => {
   await pool.query("DELETE FROM users");
-  await pool.end();
 });
 
 test("POST /api/auth/register - should register a new user", async () => {
@@ -141,12 +140,10 @@ test("POST /api/auth/login - should reject invalid input", async () => {
 });
 
 test("GET /api/auth/me - should return authenticated user", async () => {
-  const loginResponse = await request(app)
-    .post("/api/auth/login")
-    .send({
-      email: "testuser@example.com",
-      password: "password123",
-    });
+  const loginResponse = await request(app).post("/api/auth/login").send({
+    email: "testuser@example.com",
+    password: "password123",
+  });
 
   const token = loginResponse.body.token;
 
@@ -166,15 +163,11 @@ test("GET /api/auth/me - should return authenticated user", async () => {
 });
 
 test("GET /api/auth/me - should reject request without token", async () => {
-  const response = await request(app)
-    .get("/api/auth/me");
+  const response = await request(app).get("/api/auth/me");
 
   assert.strictEqual(response.statusCode, 401);
 
-  assert.strictEqual(
-    response.body.message,
-    "Authentication required."
-  );
+  assert.strictEqual(response.body.message, "Authentication required.");
 });
 
 test("GET /api/auth/me - should reject invalid token", async () => {
@@ -184,26 +177,20 @@ test("GET /api/auth/me - should reject invalid token", async () => {
 
   assert.strictEqual(response.statusCode, 401);
 
-  assert.strictEqual(
-    response.body.message,
-    "Invalid or expired token."
-  );
+  assert.strictEqual(response.body.message, "Invalid or expired token.");
 });
 
 test("GET /api/auth/me - should return 404 if user no longer exists", async () => {
-  const loginResponse = await request(app)
-    .post("/api/auth/login")
-    .send({
-      email: "testuser@example.com",
-      password: "password123",
-    });
+  const loginResponse = await request(app).post("/api/auth/login").send({
+    email: "testuser@example.com",
+    password: "password123",
+  });
 
   const token = loginResponse.body.token;
 
-  await pool.query(
-    "DELETE FROM users WHERE email = $1",
-    ["testuser@example.com"]
-  );
+  await pool.query("DELETE FROM users WHERE email = $1", [
+    "testuser@example.com",
+  ]);
 
   const response = await request(app)
     .get("/api/auth/me")
@@ -211,8 +198,5 @@ test("GET /api/auth/me - should return 404 if user no longer exists", async () =
 
   assert.strictEqual(response.statusCode, 404);
 
-  assert.strictEqual(
-    response.body.message,
-    "User not found."
-  );
+  assert.strictEqual(response.body.message, "User not found.");
 });

@@ -17,8 +17,6 @@ after(async () => {
     DELETE FROM movies
     WHERE title = 'Test Movie'
   `);
-
-  await pool.end();
 });
 
 test("GET /api/movies/:id - should return a movie", async () => {
