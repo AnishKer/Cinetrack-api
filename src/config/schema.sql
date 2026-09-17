@@ -45,3 +45,12 @@ CREATE TABLE reviews (
     CONSTRAINT unique_user_movie_review
         UNIQUE (user_id, movie_id)
 );
+
+CREATE INDEX idx_watchlist_user_added
+ON watchlist_items (user_id, added_at DESC);
+
+CREATE INDEX idx_reviews_movie_created
+ON reviews (movie_id, created_at DESC);
+
+CREATE INDEX idx_movies_genre
+ON movies (genre);
