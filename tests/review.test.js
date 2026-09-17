@@ -188,11 +188,10 @@ test("GET /api/movies/:movieId/reviews returns reviews", async () => {
     [userId],
   );
 
-  const response = await request(app)
-    .get("/api/movies/5/reviews");
+  const response = await request(app).get("/api/movies/5/reviews");
 
   assert.strictEqual(response.status, 200);
-})
+});
 
 test("GET /api/movies/:movieId/reviews includes reviewer username", async () => {
   await pool.query(
@@ -248,4 +247,105 @@ test("GET /api/movies/:movieId/reviews is publicly accessible", async () => {
   const response = await request(app).get("/api/movies/7/reviews");
 
   assert.strictEqual(response.status, 200);
+});
+
+test("DELETE /api/movies/:movieId/review deletes user's review", async () => {
+  await pool.query(
+    `
+    INSERT INTO watchlist_items (user_id, movie_id, status)
+    VALUES ($1, 8, 'watched');
+    `,
+    [userId],
+  );
+
+  await pool.query(
+    `
+    INSERT INTO reviews (
+      user_id,
+      movie_id,
+      rating,
+      review_text
+    )
+    VALUES ($1, 8, 9, 'Review to delete');
+    `,
+    [userId],
+  );
+
+  const response = await request(app)
+    .delete("/api/movies/8/reviews")
+    .set("Authorization", `Bearer ${token}`);
+
+  assert.strictEqual(response.status, 204);
+
+  const check = await pool.query(
+    `
+    SELECT id
+    FROM reviews
+    WHERE user_id = $1
+      AND movie_id = 8;
+    `,
+    [userId],
+  );
+
+  assert.strictEqual(check.rows.length, 0);
+});
+
+test("DELETE /api/movies/:movieId/review returns 404 when review does not exist", async () => {
+  const response = await request(app)
+    .delete("/api/movies/9/reviews")
+    .set("Authorization", `Bearer ${token}`);
+
+  assert.strictEqual(response.status, 404);
+});
+
+test("DELETE /api/movies/:movieId/review cannot delete another user's review", async () => {
+  const timestamp = Date.now();
+
+  const otherUsername = `otheruser${timestamp}`;
+  const otherEmail = `otheruser${timestamp}@example.com`;
+
+  const registerResponse = await request(app).post("/api/auth/register").send({
+    username: otherUsername,
+    email: otherEmail,
+    password: "password123",
+  });
+
+  assert.strictEqual(registerResponse.status, 201);
+
+  const otherUserId = registerResponse.body.user.id;
+
+  await pool.query(
+    `
+    INSERT INTO reviews (
+      user_id,
+      movie_id,
+      rating,
+      review_text
+    )
+    VALUES ($1, 10, 8, 'Other user review');
+    `,
+    [otherUserId],
+  );
+
+  const response = await request(app)
+    .delete("/api/movies/10/review")
+    .set("Authorization", `Bearer ${token}`);
+
+  assert.strictEqual(response.status, 404);
+
+  await pool.query(
+    `
+    DELETE FROM reviews
+    WHERE user_id = $1;
+    `,
+    [otherUserId],
+  );
+
+  await pool.query(
+    `
+    DELETE FROM users
+    WHERE id = $1;
+    `,
+    [otherUserId],
+  );
 });

@@ -96,3 +96,27 @@ export const getReviews = async (req, res, next) => {
     next(err);
   }
 };
+
+export const deleteReview = async (req, res, next) => {
+  try {
+    const { movieId } = req.params;
+    const userId = req.user.userId;
+
+    const result = await pool.query(
+      `
+        delete from reviews where user_id = $1 and movie_id = $2 returning id;
+      `,
+      [userId, movieId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "Review not found",
+      });
+    }
+
+    return res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
