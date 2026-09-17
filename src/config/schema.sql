@@ -7,12 +7,15 @@ CREATE TABLE users (
 );
 
 CREATE TABLE movies (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    release_year INTEGER NOT NULL,
-    genre VARCHAR(100) NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  release_year INTEGER NOT NULL,
+  genre VARCHAR(100) NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT unique_movie_title_year
+    UNIQUE (title, release_year)
 );
 
 CREATE TABLE watchlist_items (

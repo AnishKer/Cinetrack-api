@@ -119,17 +119,24 @@ const movies = [
 
 const seedMovies = async () => {
   try {
+    let insertedCount = 0;
+
     for (const movie of movies) {
-      await pool.query(
+      const result = await pool.query(
         `
-        INSERT INTO movies (title, release_year, genre, description)
-        VALUES ($1, $2, $3, $4)
+          INSERT INTO movies (title, release_year, genre, description)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (title, release_year) DO NOTHING
         `,
         [movie.title, movie.releaseYear, movie.genre, movie.description],
       );
+
+      insertedCount += result.rowCount;
     }
 
-    console.log(`${movies.length} movies inserted successfully.`);
+    console.log(
+      `${insertedCount} new movies inserted. ${movies.length - insertedCount} already existed.`,
+    );
   } catch (error) {
     console.error("Seeding failed:", error);
   } finally {
