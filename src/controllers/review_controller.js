@@ -1,5 +1,6 @@
 import pool from "../config/db.js";
 import { createReviewSchema } from "../validators/review_validator.js";
+import { movieIdParamSchema } from "../validators/param_validator.js";
 
 export const createReview = async (req, res, next) => {
   try {
@@ -12,7 +13,16 @@ export const createReview = async (req, res, next) => {
     }
 
     const { rating, review_text } = result.data;
-    const { movieId } = req.params;
+
+    const paramResult = movieIdParamSchema.safeParse(req.params);
+
+    if (!paramResult.success) {
+      return res.status(400).json({
+        message: "Invalid movie ID.",
+      });
+    }
+
+    const { movieId } = paramResult.data;
     const userId = req.user.userId;
 
     const movieResult = await pool.query(
@@ -65,7 +75,15 @@ export const createReview = async (req, res, next) => {
 
 export const getReviews = async (req, res, next) => {
   try {
-    const { movieId } = req.params;
+    const paramResult = movieIdParamSchema.safeParse(req.params);
+
+    if (!paramResult.success) {
+      return res.status(400).json({
+        message: "Invalid movie ID.",
+      });
+    }
+
+    const { movieId } = paramResult.data;
 
     const movieResult = await pool.query(
       `
@@ -99,7 +117,15 @@ export const getReviews = async (req, res, next) => {
 
 export const deleteReview = async (req, res, next) => {
   try {
-    const { movieId } = req.params;
+    const paramResult = movieIdParamSchema.safeParse(req.params);
+
+    if (!paramResult.success) {
+      return res.status(400).json({
+        message: "Invalid movie ID.",
+      });
+    }
+
+    const { movieId } = paramResult.data;
     const userId = req.user.userId;
 
     const result = await pool.query(

@@ -1,5 +1,6 @@
 import pool from "../config/db.js";
 import { movieQuerySchema } from "../validators/movie_validator.js";
+import { idParamSchema } from "../validators/param_validator.js";
 
 export const getMovies = async (req, res, next) => {
   try {
@@ -81,21 +82,33 @@ export const getMovies = async (req, res, next) => {
 
 export const getMovieById = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const result = idParamSchema.safeParse(req.params);
 
-    const result = await pool.query(
-      ` select id,title,release_year,genre,description from movies where id = $1;`,
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid movie ID.",
+      });
+    }
+
+    const { id } = result.data;
+
+    const movieResult = await pool.query(
+      `
+      SELECT id, title, release_year, genre, description
+      FROM movies
+      WHERE id = $1;
+      `,
       [id],
     );
 
-    if (result.rows.length === 0) {
+    if (movieResult.rows.length === 0) {
       return res.status(404).json({
         message: "Movie not found.",
       });
     }
 
     return res.status(200).json({
-      movie: result.rows[0],
+      movie: movieResult.rows[0],
     });
   } catch (err) {
     next(err);

@@ -1,17 +1,26 @@
 import pool from "../config/db.js";
 import { updateWatchlistSchema } from "../validators/watchlist_validator.js";
+import { movieIdParamSchema } from "../validators/param_validator.js";
+
 export const addMovie = async (req, res, next) => {
   try {
-    const { movieId } = req.params;
+    const result = movieIdParamSchema.safeParse(req.params);
 
-    const result = await pool.query(
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid movie ID.",
+      });
+    }
+
+    const { movieId } = result.data;
+    const movieResult = await pool.query(
       `
-          select id from movies where id = $1
-          `,
+      select id from movies where id=$1
+      `,
       [movieId],
     );
 
-    if (result.rows.length === 0) {
+    if (movieResult.rows.length === 0) {
       return res.status(404).json({
         message: "Movie not found.",
       });
@@ -60,15 +69,23 @@ export const getWatchlist = async (req, res, next) => {
 
 export const updateMovie = async (req, res, next) => {
   try {
-    const result = updateWatchlistSchema.safeParse(req.body);
+    const bodyResult = updateWatchlistSchema.safeParse(req.body);
 
-    if (!result.success) {
+    if (!bodyResult.success) {
       return res.status(400).json({
         message: "Validation failed.",
       });
     }
-    const { status } = result.data;
-    const { movieId } = req.params;
+
+    const paramResult = movieIdParamSchema.safeParse(req.params);
+
+    if (!paramResult.success) {
+      return res.status(400).json({
+        message: "Invalid movie ID.",
+      });
+    }
+    const { status } = bodyResult.data;
+    const { movieId } = paramResult.data;
     const userId = req.user.userId;
     const watchedAt = status === "watched" ? new Date() : null;
     const updatedMovie = await pool.query(
@@ -101,9 +118,18 @@ export const updateMovie = async (req, res, next) => {
 
 export const removeMovie = async (req, res, next) => {
   try {
-    const { movieId } = req.params;
+    const result = movieIdParamSchema.safeParse(req.params);
+
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid movie ID.",
+      });
+    }
+
+    const { movieId } = result.data;
     const userId = req.user.userId;
-    const result = await pool.query(
+
+    const deleteResult = await pool.query(
       `
             delete from watchlist_items where user_id = $1 and movie_id = $2 
             returning id;
@@ -111,7 +137,7 @@ export const removeMovie = async (req, res, next) => {
       [userId, movieId],
     );
 
-    if (result.rows.length === 0) {
+    if (deleteResult.rows.length === 0) {
       return res.status(404).json({
         message: "Movie not found in watchlist.",
       });
