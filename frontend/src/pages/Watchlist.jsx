@@ -64,6 +64,62 @@ function Watchlist() {
     );
   }
 
+    async function updateStatus(movieId, status) {
+      setError("");
+
+      try {
+        const response = await fetch(`/api/watchlist/${movieId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Could not update status.");
+        }
+
+        setMovies((current) =>
+          current.map((movie) =>
+            movie.movie_id === movieId ? { ...movie, status } : movie
+          )
+        );
+      } catch (err) {
+        setError(err.message || "Something went wrong.");
+      }
+    }
+
+
+    
+    async function removeMovie(movieId) {
+      setError("");
+    
+      try {
+        const response = await fetch(`/api/watchlist/${movieId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+    
+        if (!response.ok) {
+          const message = await response.text();
+          throw new Error(message || "Could not remove movie.");
+        }
+    
+        setMovies((current) =>
+          current.filter((movie) => movie.movie_id !== movieId)
+        );
+      } catch (err) {
+        setError(err.message || "Something went wrong.");
+      }
+    }
+
+
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="mb-8 flex items-center justify-between gap-4">
@@ -120,6 +176,31 @@ function Watchlist() {
               <p className="mt-4 text-xs text-gray-500">
                 Added {new Date(movie.added_at).toLocaleDateString()}
               </p>
+
+
+                <button
+                  onClick={() =>
+                    updateStatus(
+                      movie.movie_id,
+                      movie.status === "planned" ? "watched" : "planned"
+                    )
+                  }
+                  className="mt-4 w-full rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold hover:bg-violet-500"
+                >
+                  {movie.status === "planned"
+                    ? "Mark as Watched"
+                    : "Mark as Planned"}
+                </button>
+
+
+                <button
+                  onClick={() => removeMovie(movie.movie_id)}
+                  className="mt-2 w-full rounded-xl border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/10"
+                >
+                  Remove from Watchlist
+                </button>
+
+                
             </article>
           ))}
         </div>

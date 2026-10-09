@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { useEffect, useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Watchlist from "./pages/Watchlist";
@@ -10,6 +10,7 @@ const API_URL = "/api/movies";
 
 function App() {
   const { user, token, logout: authLogout } = useAuth();
+  
 
 
   const [movies, setMovies] = useState([]);
@@ -31,6 +32,7 @@ function App() {
 const [watchlistLoading, setWatchlistLoading] = useState(false);
 const [watchlistError, setWatchlistError] = useState("");
 const [watchlistBusy, setWatchlistBusy] = useState([]);
+const location = useLocation();
 
   function handleLogout() {
     authLogout();
@@ -96,7 +98,7 @@ async function updateWatchlistStatus(movieId, status) {
 
     setWatchlist((current) =>
       current.map((item) =>
-        item.movie_id === movieId ? { ...item, ...data.watchlist } : item
+        item.movie_id === movieId ? { ...item, status } : item
       )
     );
   } catch (err) {
@@ -178,7 +180,7 @@ async function removeFromWatchlist(movieId) {
 
   fetchWatchlist();
   return () => controller.abort();
-}, [token]);
+}, [token , location.pathname]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -247,6 +249,12 @@ async function removeFromWatchlist(movieId) {
       <span className="hidden text-sm text-zinc-400 sm:inline">
         Hi, {user.username}
       </span>
+      <Link
+    to="/watchlist"
+    className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium transition hover:border-violet-400 hover:text-violet-300"
+  >
+    My Watchlist
+  </Link>
       <button
         onClick={handleLogout}
         className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:border-violet-400"
