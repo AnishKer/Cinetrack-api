@@ -8,7 +8,9 @@ import Register from "./pages/Register";
 const API_URL = "/api/movies";
 
 function App() {
-  const { user, logout } = useAuth();
+  const { user, token, logout: authLogout } = useAuth();
+
+
   const [movies, setMovies] = useState([]);
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("");
@@ -23,6 +25,159 @@ function App() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
+  const [watchlist, setWatchlist] = useState([]);
+const [watchlistLoading, setWatchlistLoading] = useState(false);
+const [watchlistError, setWatchlistError] = useState("");
+const [watchlistBusy, setWatchlistBusy] = useState([]);
+
+  function handleLogout() {
+    authLogout();
+    setWatchlist([]);
+    setWatchlistError("");
+    setWatchlistLoading(false);
+  }
+
+  async function addToWatchlist(movieId) {
+  setWatchlistBusy((current) => [...current, movieId]);
+  setWatchlistError("");
+
+  try {
+    const response = await fetch(`/api/watchlist/${movieId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Could not add movie.");
+    }
+
+    const refreshed = await fetch("/api/watchlist", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const refreshedData = await refreshed.json();
+
+    if (!refreshed.ok) {
+      throw new Error(refreshedData.message || "Could not refresh watchlist.");
+    }
+
+    setWatchlist(refreshedData.watchlist);
+  } catch (err) {
+    setWatchlistError(err.message || "Something went wrong.");
+  } finally {
+    setWatchlistBusy((current) => current.filter((id) => id !== movieId));
+  }
+}
+
+async function updateWatchlistStatus(movieId, status) {
+  setWatchlistBusy((current) => [...current, movieId]);
+  setWatchlistError("");
+
+  try {
+    const response = await fetch(`/api/watchlist/${movieId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Could not update status.");
+    }
+
+    setWatchlist((current) =>
+      current.map((item) =>
+        item.movie_id === movieId ? { ...item, ...data.watchlist } : item
+      )
+    );
+  } catch (err) {
+    setWatchlistError(err.message || "Something went wrong.");
+  } finally {
+    setWatchlistBusy((current) => current.filter((id) => id !== movieId));
+  }
+}
+
+async function removeFromWatchlist(movieId) {
+  setWatchlistBusy((current) => [...current, movieId]);
+  setWatchlistError("");
+
+  try {
+    const response = await fetch(`/api/watchlist/${movieId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Could not remove movie.");
+    }
+
+    setWatchlist((current) =>
+      current.filter((item) => item.movie_id !== movieId)
+    );
+  } catch (err) {
+    setWatchlistError(err.message || "Something went wrong.");
+  } finally {
+    setWatchlistBusy((current) => current.filter((id) => id !== movieId));
+  }
+}
+
+
+
+  useEffect(() => {
+  if (!token) {
+    setWatchlist([]);
+    setWatchlistError("");
+    setWatchlistLoading(false);
+    return;
+  }
+
+  const controller = new AbortController();
+
+    async function fetchWatchlist() {
+    setWatchlistLoading(true);
+    setWatchlistError("");
+
+    try {
+      const response = await fetch("/api/watchlist", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        signal: controller.signal,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Could not load watchlist.");
+      }
+
+      setWatchlist(data.watchlist);
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        setWatchlistError(err.message || "Something went wrong.");
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setWatchlistLoading(false);
+      }
+    }
+  }
+
+  fetchWatchlist();
+  return () => controller.abort();
+}, [token]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -68,7 +223,7 @@ function App() {
     fetchMovies();
 
     return () => controller.abort();
-  }, [search, genre, year, sort, order, page, pagination.limit]);
+  }, [search, genre, year, sort, order, page, pagination.limit, retryCount]);
 
   const resetPage = (setter, value) => {
     setter(value);
@@ -92,7 +247,7 @@ function App() {
         Hi, {user.username}
       </span>
       <button
-        onClick={logout}
+        onClick={handleLogout}
         className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:border-violet-400"
       >
         Log out
@@ -206,11 +361,11 @@ function App() {
           <div className="rounded-xl border border-red-400/20 bg-red-400/10 p-5 text-red-300">
             {error}
             <button
-              onClick={() => setPage((current) => current)}
-              className="ml-3 underline"
-            >
-              Retry
-            </button>
+                onClick={() => setRetryCount((count) => count + 1)}
+                className="ml-3 underline"
+              >
+                Retry
+              </button>
           </div>
         )}
 
@@ -256,12 +411,20 @@ function App() {
                     </p>
 
                     <button
-                      disabled
-                      title="Watchlist integration is coming next"
-                      className="mt-5 w-full cursor-not-allowed rounded-xl border border-white/10 py-2.5 text-sm font-semibold text-zinc-500"
-                    >
-                      + Add to watchlist · Coming next
-                    </button>
+  onClick={() => addToWatchlist(movie.id)}
+  disabled={!user || watchlistBusy.includes(movie.id) ||
+    watchlist.some((item) => item.movie_id === movie.id)}
+  title={!user ? "Log in to add movies" : ""}
+  className="mt-5 w-full rounded-xl border border-white/10 py-2.5 text-sm font-semibold transition hover:border-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+>
+  {!user
+    ? "Log in to add to watchlist"
+    : watchlistBusy.includes(movie.id)
+      ? "Adding..."
+      : watchlist.some((item) => item.movie_id === movie.id)
+        ? "✓ In your watchlist"
+        : "+ Add to watchlist"}
+</button>
                   </div>
                 </article>
               ))}
