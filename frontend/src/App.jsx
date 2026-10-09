@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Watchlist from "./pages/Watchlist";
 
 const API_URL = "/api/movies";
 
@@ -469,6 +470,7 @@ async function removeFromWatchlist(movieId) {
       } />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/watchlist" element={<Watchlist />} />
     </Routes>
 
       
