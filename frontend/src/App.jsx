@@ -1,9 +1,14 @@
-
+import { Link } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 import { useEffect, useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 const API_URL = "/api/movies";
 
 function App() {
+  const { user, logout } = useAuth();
   const [movies, setMovies] = useState([]);
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("");
@@ -80,11 +85,43 @@ function App() {
             cine<span className="text-violet-400">track</span>
           </a>
 
-          <span className="text-sm text-zinc-400">Your personal cinema</span>
+<nav className="flex items-center gap-3">
+  {user ? (
+    <>
+      <span className="hidden text-sm text-zinc-400 sm:inline">
+        Hi, {user.username}
+      </span>
+      <button
+        onClick={logout}
+        className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:border-violet-400"
+      >
+        Log out
+      </button>
+    </>
+  ) : (
+    <>
+      <Link
+        to="/login"
+        className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:border-violet-400"
+      >
+        Log in
+      </Link>
+      <Link
+        to="/register"
+        className="rounded-xl bg-violet-500 px-4 py-2 text-sm font-semibold hover:bg-violet-400"
+      >
+        Sign up
+      </Link>
+    </>
+  )}
+</nav>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-12">
+
+      <Routes>
+      <Route path="/" element={
+        <main className="mx-auto max-w-7xl px-6 py-12">
         <section className="mb-12">
           <p className="mb-4 text-sm font-semibold uppercase tracking-[0.25em] text-violet-400">
             Discover something great
@@ -192,7 +229,7 @@ function App() {
                   className="group overflow-hidden rounded-2xl border border-white/10 bg-[#13151c] transition duration-300 hover:-translate-y-1 hover:border-violet-400/40"
                 >
                   <div
-                    className={`flex h-48 items-center justify-center bg-gradient-to-br ${
+                    className={`flex h-48 items-center justify-center bg-linear-to-br ${
                       index % 2 === 0
                         ? "from-violet-950 to-[#191a27]"
                         : "from-slate-800 to-[#191a27]"
@@ -266,6 +303,12 @@ function App() {
           CineTrack · Made for people who love films.
         </footer>
       </main>
+      } />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+    </Routes>
+
+      
     </div>
   );
 }
