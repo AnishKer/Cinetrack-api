@@ -100,7 +100,7 @@ export const getReviews = async (req, res, next) => {
 
     const reviewResult = await pool.query(
       `
-        select r.id, r.movie_id,r.rating,r.review_text,r.created_at,r.updated_at,u.username from reviews r join users u on r.user_id = u.id 
+        select r.id,r.user_id, r.movie_id,r.rating,r.review_text,r.created_at,r.updated_at,u.username from reviews r join users u on r.user_id = u.id 
         where r.movie_id = $1
         order by r.created_at desc;
       `,

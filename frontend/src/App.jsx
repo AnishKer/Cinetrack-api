@@ -5,6 +5,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Watchlist from "./pages/Watchlist";
+import MovieReviews from "./pages/MovieReviews";
 
 const API_URL = "/api/movies";
 
@@ -21,7 +22,7 @@ function App() {
   const [order, setOrder] = useState("asc");
   const [page, setPage] = useState(0);
   const [pagination, setPagination] = useState({
-    limit: 10,
+    limit: 12,
     offset: 0,
     total: 0,
   });
@@ -434,6 +435,7 @@ async function removeFromWatchlist(movieId) {
         ? "✓ In your watchlist"
         : "+ Add to watchlist"}
 </button>
+    <MovieReviews movieId={movie.id} />
                   </div>
                 </article>
               ))}
