@@ -19,6 +19,8 @@ Before running the frontend, ensure you have installed:
 - npm (included with Node.js)
 - The CineTrack backend, configured with PostgreSQL and its required environment variables
 
+Note: The movie catalog currently uses dummy/seed data for demonstration purposes. Movie details are stored in the local PostgreSQL database and are not yet integrated with a live movie data API.
+
 ## Getting Started
 
 ### 1. Clone the Repository
@@ -26,11 +28,9 @@ Before running the frontend, ensure you have installed:
 If you haven't cloned the project yet:
 
 ```bash
-git clone <YOUR_REPOSITORY_URL>
-cd <YOUR_REPOSITORY_NAME>
+git clone https://github.com/AnishKer/Cinetrack-api.git
+cd Cinetrack-api/frontend
 ```
-
-Replace the placeholders with your actual Git repository URL and repository name.
 
 ### 2. Navigate to the Frontend
 

@@ -69,6 +69,8 @@ PostgreSQL acts as the source of truth for users, movies, watchlist entries, and
 
 ## Database Schema
 
+Note: The movie catalog currently uses dummy/seed data for demonstration purposes. Movie details are stored in the local PostgreSQL database and are not yet integrated with a live movie data API.
+
 The project uses four main tables.
 
 ### `users`
@@ -459,8 +461,8 @@ The API was manually tested using Postman, including:
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repository-url>
-cd <your-repository-directory>
+git clone https://github.com/AnishKer/Cinetrack-api.git
+cd Cinetrack-api/backend
 ```
 
 ### 2. Install dependencies
