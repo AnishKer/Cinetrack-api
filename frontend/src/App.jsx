@@ -77,68 +77,6 @@ const location = useLocation();
   }
 }
 
-async function updateWatchlistStatus(movieId, status) {
-  setWatchlistBusy((current) => [...current, movieId]);
-  setWatchlistError("");
-
-  try {
-    const response = await fetch(`/api/watchlist/${movieId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "Could not update status.");
-    }
-
-    setWatchlist((current) =>
-      current.map((item) =>
-        item.movie_id === movieId ? { ...item, status } : item
-      )
-    );
-  } catch (err) {
-    setWatchlistError(err.message || "Something went wrong.");
-  } finally {
-    setWatchlistBusy((current) => current.filter((id) => id !== movieId));
-  }
-}
-
-async function removeFromWatchlist(movieId) {
-  setWatchlistBusy((current) => [...current, movieId]);
-  setWatchlistError("");
-
-  try {
-    const response = await fetch(`/api/watchlist/${movieId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "Could not remove movie.");
-    }
-
-    setWatchlist((current) =>
-      current.filter((item) => item.movie_id !== movieId)
-    );
-  } catch (err) {
-    setWatchlistError(err.message || "Something went wrong.");
-  } finally {
-    setWatchlistBusy((current) => current.filter((id) => id !== movieId));
-  }
-}
-
-
-
   useEffect(() => {
   if (!token) {
     setWatchlist([]);

@@ -156,7 +156,7 @@ function Watchlist() {
           {movies.map((movie) => (
             <article
               key={movie.movie_id}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
+              className="rounded-2xl border border-white/10 bg-white/3 p-5"
             >
               <div className="flex items-start justify-between gap-3">
                 <h2 className="text-lg font-semibold">{movie.title}</h2>
